@@ -96,11 +96,22 @@ export function diffProps(
 
   for (let entry of Object.entries(nextProps)) {
     const [propKey: string, nextProp: any] = entry;
-    const lastProp = lastProps[propKey];
 
+    if (propKey === 'value' || propKey === 'checked') {
+      // Value is always a string but React accepts most any type so we need
+      // to compare the prop value as a string
+      if (
+        (propKey === 'value' ? String(nextProp) : nextProp) !==
+        (domElement: any)[propKey]
+      )
+        add(propKey, nextProp);
+      continue;
+    }
+
+    const lastProp = lastProps[propKey];
     if (
-      nextProp === lastProp ||
       propKey === 'style' ||
+      nextProp === lastProp ||
       (nextProp == null && lastProp == null)
     ) {
       continue;
@@ -118,8 +129,6 @@ export function diffProps(
       if (typeof nextProp === 'string' || typeof nextProp === 'number')
         add(propKey, nextProp);
     } else {
-      // For any other property we always add it to the queue and then we
-      // filter it out using the whitelist during the commit.
       add(propKey, nextProp);
     }
   }
@@ -143,6 +152,7 @@ export function updateProps(
     // inline styles!
     if (propKey === 'style') {
       css(domElement, propValue);
+      //
     } else if (propKey === 'dangerouslySetInnerHTML') {
       domElement.innerHTML = propValue.__html;
 

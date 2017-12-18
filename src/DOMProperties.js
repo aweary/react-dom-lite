@@ -8,19 +8,29 @@ export const RESERVED_PROPS = {
 
 export const isEventRegex = /^on([A-Z][a-zA-Z]+)$/;
 
-const HAS_STRING_BOOLEAN_VALUE = 0x40;
+const STRING_BOOLEAN = 1;
+const ATTRIBUTE = 2;
 
-const properties = {
-  contentEditable: HAS_STRING_BOOLEAN_VALUE,
-  draggable: HAS_STRING_BOOLEAN_VALUE,
-  spellCheck: HAS_STRING_BOOLEAN_VALUE,
-  value: HAS_STRING_BOOLEAN_VALUE
-};
+/**
+ * A string attribute that accepts react boolean values. The rendered
+ * value should be "true" or "false",
+ * e.g `<input value="true" />` not `<input value />`
+ */
+const isStringBoolean = (key: string) =>
+  key === 'contentEditable' ||
+  key === 'draggable' ||
+  key === 'spellCheck' ||
+  key === 'value';
+
+/**
+ * Props that must be rendered as attributes even if accessable as a property.
+ */
+const isAttribute = key => key === 'list' || key === 'type'; // || isSvg || isNamespaced
 
 export function setValueOnElement(domElement, propName, value) {
   if (RESERVED_PROPS.hasOwnProperty(propName)) return;
 
-  if (propName in domElement) {
+  if (!isAttribute(propName) && propName in domElement) {
     domElement[propName] = value == null ? '' : value;
     return;
   }
@@ -29,7 +39,7 @@ export function setValueOnElement(domElement, propName, value) {
   if (value == null) {
     domElement.removeAttribute(attributeName);
   } else {
-    if (properties[propName] === HAS_STRING_BOOLEAN_VALUE) {
+    if ((value === true || value === false) && isStringBoolean(propName)) {
       value = String(value);
     } else if (value === true) {
       value = '';
