@@ -2,7 +2,8 @@
 
 import css from 'dom-helpers/style';
 import invariant from 'invariant';
-import { setValueOnElement, isEventRegex } from './DOMProperties';
+import { isEventRegex } from './DOMConfig';
+import { setValueOnElement } from './DOMProperties';
 
 function listenTo(
   domElement: Element,
@@ -29,7 +30,11 @@ function listenTo(
   domElement.addEventListener(eventName, value, useCapture);
 }
 
-export function setInitialProps(domElement: Element, nextProps: Props) {
+export function setInitialProps(
+  domElement: Element,
+  nextProps: Props,
+  isSvg: boolean,
+) {
   Object.entries(nextProps).forEach(([propKey: string, propValue: any]) => {
     let match;
 
@@ -58,8 +63,8 @@ export function setInitialProps(domElement: Element, nextProps: Props) {
       // Add DOM event listeners
     } else if ((match = propKey.match(isEventRegex))) {
       listenTo(domElement, match[1], propValue, null);
-    } else if (propValue != null) {
-      setValueOnElement(domElement, propKey, propValue);
+    } else {
+      setValueOnElement(domElement, propKey, propValue, isSvg);
     }
   });
 }
@@ -149,6 +154,7 @@ export function updateProps(
   domElement: Element,
   updateQueue: Array<[string, any]>,
   lastProps: Props,
+  isSvg: boolean,
 ) {
   let match;
 
@@ -169,8 +175,8 @@ export function updateProps(
       // Add DOM event listeners
     } else if ((match = propKey.match(isEventRegex))) {
       listenTo(domElement, match[1], propValue, lastProps[propKey]);
-    } else if (propValue != null) {
-      setValueOnElement(domElement, propKey, propValue);
+    } else {
+      setValueOnElement(domElement, propKey, propValue, isSvg);
     }
   }
 }

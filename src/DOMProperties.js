@@ -1,15 +1,13 @@
+// @flow
+
 import hyphenate from 'dom-helpers/util/hyphenate';
 
-export const RESERVED_PROPS = {
-  children: true,
-  dangerouslySetInnerHTML: true,
-  innerHTML: true
-};
-
-export const isEventRegex = /^on([A-Z][a-zA-Z]+)$/;
-
-const STRING_BOOLEAN = 1;
-const ATTRIBUTE = 2;
+import {
+  isNamespaced,
+  ReservedPropNames,
+  MapPropertyToAttribute,
+  MapNamespaceToUri,
+} from './DOMConfig';
 
 /**
  * A string attribute that accepts react boolean values. The rendered
@@ -17,34 +15,50 @@ const ATTRIBUTE = 2;
  * e.g `<input value="true" />` not `<input value />`
  */
 const isStringBoolean = (key: string) =>
-  key === 'contentEditable' ||
+  key === 'contenteditable' ||
   key === 'draggable' ||
-  key === 'spellCheck' ||
+  key === 'spellcheck' ||
   key === 'value';
 
-/**
- * Props that must be rendered as attributes even if accessable as a property.
- */
-const isAttribute = key => key === 'list' || key === 'type'; // || isSvg || isNamespaced
+export function setValueOnElement(
+  domElement: Element,
+  propName: string,
+  value: any,
+  isSvg: boolean,
+) {
+  if (ReservedPropNames.has(propName)) return;
 
-export function setValueOnElement(domElement, propName, value) {
-  if (RESERVED_PROPS.hasOwnProperty(propName)) return;
-
-  if (!isAttribute(propName) && propName in domElement) {
-    domElement[propName] = value == null ? '' : value;
+  if (
+    !isSvg &&
+    propName !== 'list' &&
+    propName !== 'type' &&
+    propName in domElement
+  ) {
+    (domElement: any)[propName] = value == null ? '' : value;
     return;
   }
 
-  const attributeName = hyphenate(propName);
+  let ns = isSvg && propName.match(isNamespaced);
+  if (ns) {
+    ns = MapNamespaceToUri[ns[1]];
+    propName = propName.replace(isNamespaced, '').toLowerCase();
+  }
+
+  // manually map inconsistent attribute names from consistent prop names,
+  // otherwise assume it's predictably camelCase to dash-case
+  const attributeName = MapPropertyToAttribute[propName] || hyphenate(propName);
+
   if (value == null) {
-    domElement.removeAttribute(attributeName);
+    if (ns) domElement.removeAttributeNS(ns, attributeName);
+    else domElement.removeAttribute(attributeName);
   } else {
-    if ((value === true || value === false) && isStringBoolean(propName)) {
+    if ((value === true || value === false) && isStringBoolean(attributeName)) {
       value = String(value);
     } else if (value === true) {
       value = '';
     }
 
-    domElement.setAttribute(attributeName, value);
+    if (ns) domElement.setAttributeNS(ns, attributeName, value);
+    else domElement.setAttribute(attributeName, value);
   }
 }

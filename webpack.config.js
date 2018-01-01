@@ -1,4 +1,4 @@
-const { rules, plugins } = require('webpack-atoms')
+const { rules, plugins } = require('webpack-atoms');
 
 module.exports = {
   devtool: 'module-source-map',
@@ -19,6 +19,10 @@ module.exports = {
     plugins.html({
       template: `${__dirname}/examples/index.html`,
     }),
+    plugins.define({
+      __SVG__: false,
+    }),
     plugins.extractText(),
+    plugins.uglify({ parallel: 4 }),
   ],
-}
+};
